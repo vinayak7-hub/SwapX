@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SwapX v1.0 </title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* --- 1. DESIGN SYSTEM --- */
+        :root {
+            --primary: #6366f1;
+            --primary-grad: linear-gradient(135deg, #6366f1, #8b5cf6);
+            --secondary: #10b981;
+            --accent: #f59e0b;
+            --dark: #0f172a;
+            --light: #f8fafc;
+            --white: #ffffff;
+            --border: #e2e8f0;
+            --glass: rgba(255, 255, 255, 0.95);
+            --shadow: 0 10px 40px -10px rgba(0,0,0,0.1);
+            --bot-bg: #e0e7ff;
+            --bot-text: #312e81;
+        }
+        
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background-color: var(--light); color: var(--dark); padding-bottom: 100px; transition: 0.3s; }
+
+        /* DARK MODE */
+        body.dark-mode {
+            --light: #0f172a; --white: #1e293b; --dark: #f8fafc; 
+            --border: #334155; --glass: rgba(30, 41, 59, 0.95);
+            --bot-bg: #3730a3; --bot-text: #e0e7ff;
+        }
+        body.dark-mode .card, body.dark-mode nav, body.dark-mode input, body.dark-mode select, body.dark-mode textarea, body.dark-mode .chat-window, body.dark-mode .modal-box, body.dark-mode .stat-box, body.dark-mode .track-box {
+            background-color: var(--white); color: var(--dark); border-color: var(--border);
+        }
+
+        /* --- 2. COMPONENTS --- */
+        .btn { padding: 12px 24px; border-radius: 12px; border: none; cursor: pointer; font-weight: 600; transition: 0.2s; font-size: 1rem; }
+        .btn:active { transform: scale(0.98); }
+        .btn-primary { background: var(--primary-grad); color: white; width: 100%; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3); }
+        .btn-outline { background: transparent; border: 2px solid var(--border); color: var(--dark); width: 100%; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-success { background: var(--secondary); color: white; border: none; }
+        .btn-magic { background: linear-gradient(135deg, #ec4899, #8b5cf6); color: white; border: none; display: flex; align-items: center; gap: 5px; }
+        
+        .card { background: var(--white); border-radius: 16px; border: 1px solid var(--border); overflow: hidden; transition: 0.3s; box-shadow: var(--shadow); position: relative; }
+        .card:hover { transform: translateY(-5px); border-color: var(--primary); }
+        
+        /* --- SEARCH BAR CSS --- */
+        .search-bar-wrapper {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        .search-bar-wrapper input {
+            width: 100%;
+            padding: 15px 20px 15px 45px;
+            border-radius: 30px;
+            border: 1px solid var(--border);
+            background: var(--white);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            font-size: 1rem;
+            transition: 0.3s;
+        }
+        .search-bar-wrapper input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 4px 20px rgba(99, 102, 241, 0.2);
+        }
+        .search-icon {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: gray;
+        }
+
+        /* --- 3. NAVIGATION --- */
+        nav {
+            position: sticky; top: 0; z-index: 100; background: var(--glass); backdrop-filter: blur(10px);
+            padding: 1rem 5%; display: none; /* Hidden on Auth Screen */
+            justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border);
+        }
+        .logo { font-size: 1.5rem; font-weight: 800; color: var(--primary); cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        .nav-icons { display: flex; gap: 20px; align-items: center; font-size: 1.2rem; cursor: pointer; }
+        .nav-btn-sell { background: var(--primary); color: white; padding: 8px 16px; border-radius: 20px; font-size: 0.9rem; font-weight: bold; display: flex; gap: 5px; align-items: center; }
+
+        /* --- 4. VIEWS --- */
+        .view-section { display: none; padding: 20px; max-width: 1200px; margin: 0 auto; animation: fadeUp 0.4s ease; }
+        .view-section.active { display: block; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* AUTH */
+        .auth-box { max-width: 400px; margin: 10vh auto; background: var(--white); padding: 40px; border-radius: 24px; text-align: center; box-shadow: var(--shadow); }
+        
+        /* MARKET */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 25px; }
+        .card-img { width: 100%; height: 200px; object-fit: cover; background: #eee; }
+        .verified-badge { position: absolute; top: 10px; left: 10px; background: rgba(255,255,255,0.9); padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; color: var(--primary); display: flex; align-items: center; gap: 4px; }
+
+        /* DETAILS */
+        .details-container { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; background: var(--white); padding: 40px; border-radius: 24px; }
+        
+        /* PAYMENT */
+        .payment-container { max-width: 500px; margin: 0 auto; background: var(--white); padding: 30px; border-radius: 20px; border: 1px solid var(--border); }
+        .qr-box { text-align: center; margin: 20px 0; padding: 20px; background: var(--light); border-radius: 12px; }
+        .payment-toggle { display: flex; gap: 10px; margin-bottom: 20px; }
+        .pay-opt { flex: 1; padding: 10px; text-align: center; border: 1px solid var(--border); border-radius: 10px; cursor: pointer; font-size: 0.9rem; }
+        .pay-opt.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        /* SELLER DASHBOARD */
+        .stats-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 20px; }
+        .stat-box { background: var(--white); padding: 20px; border-radius: 16px; border: 1px solid var(--border); text-align: center; }
+        .stat-num { font-size: 2rem; font-weight: 800; color: var(--primary); }
+
+        /* SUPPORT & TRACKING */
+        .track-box { background: var(--white); padding: 30px; border-radius: 16px; border: 1px solid var(--border); text-align: center; margin-bottom: 20px; }
+        .track-result { margin-top: 20px; padding: 15px; background: var(--light); border-radius: 12px; display: none; text-align: left; }
+        .track-step { display: flex; gap: 15px; margin-bottom: 10px; align-items: center; }
+        .step-dot { width: 12px; height: 12px; background: var(--secondary); border-radius: 50%; }
+        
+        /* ORDERS */
+        .order-item { background: var(--white); border: 1px solid var(--border); padding: 15px; border-radius: 12px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+        
+        /* --- 5. EDITH CHAT & SELLER CHAT --- */
+        .edith-fab {
+            position: fixed; bottom: 30px; right: 30px; width: 65px; height: 65px;
+            background: var(--primary-grad); color: white; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; font-size: 2rem;
+            cursor: pointer; box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4); z-index: 2000;
+            transition: 0.3s; border: 3px solid rgba(255,255,255,0.3);
+        }
+        .edith-fab:hover { transform: scale(1.1) rotate(10deg); }
+        
+        .chat-window {
+            position: fixed; bottom: 110px; right: 30px; width: 360px; height: 550px;
+            background: var(--white); border-radius: 20px; box-shadow: var(--shadow);
+            display: none; flex-direction: column; overflow: hidden; z-index: 2000; border: 1px solid var(--border);
+        }
+        .chat-header { background: var(--primary-grad); padding: 15px; color: white; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+        /* Seller Chat Header */
+        .chat-header.human { background: linear-gradient(135deg, #10b981, #059669); } 
+
+        .chat-body { flex: 1; padding: 15px; overflow-y: auto; background: var(--light); display: flex; flex-direction: column; gap: 10px; }
+        .msg { padding: 10px 15px; border-radius: 15px; max-width: 85%; font-size: 0.9rem; line-height: 1.4; }
+        .msg.bot { align-self: flex-start; background: var(--bot-bg); color: var(--bot-text); border-bottom-left-radius: 2px; }
+        .msg.human { align-self: flex-start; background: #d1fae5; color: #065f46; border-bottom-left-radius: 2px; }
+        .msg.user { align-self: flex-end; background: var(--primary); color: white; border-bottom-right-radius: 2px; }
+        .chat-input { padding: 10px; border-top: 1px solid var(--border); display: flex; gap: 10px; background: var(--white); }
+        .chat-input input { flex: 1; padding: 10px; border-radius: 20px; border: 1px solid var(--border); outline: none; background: var(--light); color: var(--dark); }
+
+        /* --- 6. UTILS --- */
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: 600; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--light); color: var(--dark); outline: none; }
+        
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 3000; align-items: center; justify-content: center; }
+        .modal-box { background: var(--white); width: 90%; max-width: 450px; padding: 30px; border-radius: 20px; animation: fadeUp 0.3s; }
+
+        /* UPLOAD PREVIEW */
+        .upload-preview { width: 100%; height: 150px; border: 2px dashed var(--border); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: gray; margin-bottom: 10px; overflow: hidden; background: var(--light); }
+        .upload-preview img { width: 100%; height: 100%; object-fit: cover; }
+        .error-msg { color: #ef4444; font-size: 0.85rem; display: none; margin-top: 5px; }
+
+        @media (max-width: 768px) { .details-container { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+    <section id="authView" class="view-section active">
+        <div class="auth-box">
+            <h1 style="color:var(--primary); margin-bottom: 10px;">SwapX</h1>
+            <p style="color:gray; margin-bottom: 30px;">Your Trusted Campus Marketplace</p>
+            <div id="authForms">
+                <div id="loginForm">
+                    <div class="form-group"><input type="email" id="loginEmail" placeholder="Email Address"></div>
+                    <div class="form-group"><input type="password" id="loginPass" placeholder="Password"></div>
+                    <button class="btn btn-primary" onclick="handleLogin()">Login</button>
+                    <p style="margin-top:15px; font-size:0.9rem;">New here? <span style="color:var(--primary); cursor:pointer;" onclick="toggleAuthMode()">Sign Up</span></p>
+                </div>
+                <div id="signupForm" style="display:none;">
+                    <div class="form-group"><input type="text" id="regName" placeholder="Full Name"></div>
+                    <div class="form-group"><input type="email" id="regEmail" placeholder="Email Address"></div>
+                    <div class="form-group"><input type="password" id="regPass" placeholder="Create Password"></div>
+                    <button class="btn btn-primary" onclick="handleSignup()">Create Account</button>
+                    <p style="margin-top:15px; font-size:0.9rem;">Have an account? <span style="color:var(--primary); cursor:pointer;" onclick="toggleAuthMode()">Login</span></p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <nav id="mainNav">
+        <div class="logo" onclick="goHome()"><i class="fa-solid fa-recycle"></i> SwapX</div>
+        <div class="nav-icons">
+            <div class="nav-btn-sell" onclick="attemptOpenSeller()"><i class="fa-solid fa-store"></i> Seller Hub</div>
+            <i class="fa-solid fa-headset" onclick="switchView('supportView')" title="Support"></i>
+            <i class="fa-solid fa-moon" onclick="toggleTheme()" title="Theme"></i>
+            <i class="fa-solid fa-user-circle" onclick="switchView('profileView')" title="Profile"></i>
+        </div>
+    </nav>
+
+    <section id="marketView" class="view-section">
+        <div class="search-bar-wrapper">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input type="text" id="searchInput" placeholder="Search books, drafters, tech..." onkeyup="handleSearch()">
+        </div>
+        
+        <div style="display:flex; gap:10px; margin-bottom:20px; overflow-x:auto;">
+            <button class="btn btn-outline" style="width:auto;" onclick="renderGrid('All')">All</button>
+            <button class="btn btn-outline" style="width:auto;" onclick="renderGrid('Books')">Books</button>
+            <button class="btn btn-outline" style="width:auto;" onclick="renderGrid('Tech')">Tech</button>
+            <button class="btn btn-outline" style="width:auto;" onclick="renderGrid('Tools')">Tools</button>
+        </div>
+        <div class="grid" id="productGrid"></div>
+    </section>
+
+    <section id="detailsView" class="view-section">
+        <button class="btn btn-outline" style="width:auto; margin-bottom:20px;" onclick="goHome()">← Back</button>
+        <div class="details-container">
+            <img id="detailImg" src="" style="width:100%; border-radius:16px; object-fit:cover;">
+            <div>
+                <h1 id="detailTitle" style="font-size:2.5rem; line-height:1.2;">Title</h1>
+                <h2 id="detailPrice" style="color:var(--primary); font-size:2rem; margin:15px 0;">₹0</h2>
+                <div style="background:#e0e7ff; color:var(--primary); display:inline-block; padding:5px 10px; border-radius:10px; font-weight:bold; margin-bottom:20px;">
+                    <i class="fa-solid fa-check-circle"></i> Verified Seller
+                </div>
+                <p id="detailDesc" style="color:gray; font-size:1.1rem; line-height:1.6; margin-bottom:30px;">...</p>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <button class="btn btn-primary" onclick="goToPayment()">Buy with Escrow 🔒</button>
+                    <button class="btn btn-outline" onclick="openSellerChat()">💬 Message Seller</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="paymentView" class="view-section">
+        <button class="btn btn-outline" style="width:auto; margin-bottom:20px;" onclick="switchView('detailsView')">← Cancel</button>
+        <div class="payment-container">
+            <h2 style="text-align:center; margin-bottom:20px;">Secure Checkout</h2>
+            <div style="text-align:center; font-size:1.2rem; margin-bottom:20px;">
+                Total to Pay: <strong id="payAmount" style="color:var(--primary);">₹0</strong>
+            </div>
+
+            <div class="payment-toggle">
+                <div class="pay-opt active" id="optUpi" onclick="togglePaymentMethod('upi')">UPI / QR</div>
+                <div class="pay-opt" id="optCard" onclick="togglePaymentMethod('card')">Credit Card</div>
+                <div class="pay-opt" id="optCod" onclick="togglePaymentMethod('cod')">Cash (COD)</div>
+            </div>
+
+            <div id="upiSection">
+                <div class="qr-box">
+                    <img id="qrCodeImg" src="" style="width:150px; mix-blend-mode:multiply;">
+                    <p style="margin-top:10px; font-family:monospace;">store@upi</p>
+                </div>
+                <p style="text-align:center; color:gray; font-size:0.9rem;">Scan to pay via GPay/PhonePe</p>
+            </div>
+
+            <div id="cardSection" style="display:none;">
+                <div class="form-group"><label>Card Number</label><input type="text" placeholder="0000 0000 0000 0000" maxlength="16"></div>
+                <div style="display:flex; gap:10px;">
+                    <div class="form-group"><label>Expiry</label><input type="text" placeholder="MM/YY"></div>
+                    <div class="form-group"><label>CVV</label><input type="password" placeholder="123"></div>
+                </div>
+            </div>
+
+            <div id="codSection" style="display:none; text-align:center; padding:20px; background:var(--light); border-radius:12px;">
+                <i class="fa-solid fa-money-bill-wave fa-3x" style="color:var(--secondary);"></i>
+                <p style="margin-top:15px; font-weight:bold;">Pay Cash on Delivery</p>
+                <p style="color:gray; font-size:0.9rem;">Pay the seller directly when you meet them.</p>
+            </div>
+
+            <button class="btn btn-primary" style="margin-top:20px;" onclick="processPayment()">Confirm Order</button>
+        </div>
+    </section>
+
+    <section id="sellerView" class="view-section">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h2>Seller Hub</h2>
+            <button class="btn btn-primary" style="width:auto;" onclick="openSellModal()">+ List Item</button>
+        </div>
+        <div class="stats-row">
+            <div class="stat-box">
+                <div class="stat-num" id="statEarnings">₹0</div>
+                <div>Total Earnings</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-num" id="statActive">0</div>
+                <div>Active Listings</div>
+            </div>
+        </div>
+        <h3>My Inventory</h3>
+        <div id="inventoryList" style="margin-top:15px;"></div>
+    </section>
+
+    <section id="profileView" class="view-section">
+        <div style="text-align:center; margin-bottom:30px;">
+            <div style="width:80px; height:80px; background:var(--dark); color:white; border-radius:50%; margin:0 auto 10px; display:flex; align-items:center; justify-content:center; font-size:2rem;">👤</div>
+            <h2 id="profileName">User</h2>
+            <p id="profileStatus" style="color:gray;">Member</p>
+            <button class="btn btn-danger" style="width:auto; margin-top:10px;" onclick="logout()">Logout</button>
+        </div>
+        <h3>My Orders</h3>
+        <div id="ordersList" style="margin-top:15px;"></div>
+    </section>
+
+    <section id="supportView" class="view-section">
+        <h2 style="margin-bottom:20px;">🎧 Customer Care</h2>
+        <div class="track-box">
+            <h3>Track Your Order</h3>
+            <div style="display:flex; gap:10px; margin-top:15px;">
+                <input type="number" id="trackInput" placeholder="Enter Order ID" style="text-align:center;">
+                <button class="btn btn-primary" style="width:auto;" onclick="trackOrder()">Track</button>
+            </div>
+            <div id="trackResult" class="track-result">
+                <h4>Order Found: <span id="trackTitle">Item</span></h4>
+                <div class="track-step"><div class="step-dot"></div> Order Placed</div>
+                <div class="track-step"><div class="step-dot"></div> Seller Notified</div>
+                <div class="track-step" id="trackStatusStep"><div class="step-dot"></div> <span>Current Status: <strong id="trackStatusVal">Held</strong></span></div>
+            </div>
+        </div>
+        <h3>Common Issues</h3>
+        <div class="card" style="padding:15px; margin-bottom:10px;">
+            <strong>Payment Failed?</strong>
+            <p style="color:gray; font-size:0.9rem;">Check your internet. Funds are safe in Escrow if deducted.</p>
+        </div>
+    </section>
+
+    <div class="edith-fab" onclick="toggleEdith()"><i class="fa-solid fa-glasses"></i></div>
+    <div class="chat-window" id="edithWindow">
+        <div class="chat-header"><span>E.D.I.T.H.</span> <span style="cursor:pointer;" onclick="toggleEdith()">✖</span></div>
+        <div class="chat-body" id="edithBody">
+            <div class="msg bot">Online. I have access to the store's protocol. How can I help?</div>
+        </div>
+        <div class="chat-input">
+            <input type="text" id="edithInput" placeholder="Ask E.D.I.T.H..." onkeypress="handleEdithEnter(event)">
+            <button class="btn btn-primary" style="width:auto; border-radius:50%; padding:10px 14px;" onclick="sendEdithMsg()"><i class="fa-solid fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <div class="chat-window" id="sellerWindow" style="border-color:var(--secondary);">
+        <div class="chat-header human"><span>Chat with Seller</span> <span style="cursor:pointer;" onclick="closeSellerChat()">✖</span></div>
+        <div class="chat-body" id="sellerBody">
+            <div class="msg human">Hi! I saw you're interested.</div>
+        </div>
+        <div class="chat-input">
+            <input type="text" id="sellerInput" placeholder="Message..." onkeypress="handleSellerEnter(event)">
+            <button class="btn btn-primary" style="width:auto; border-radius:50%; padding:10px 14px; background:var(--secondary);" onclick="sendSellerMsg()"><i class="fa-solid fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <div id="verifyModal" class="modal-overlay">
+        <div class="modal-box">
+            <h2 style="color:var(--primary); margin-bottom:10px;"><i class="fa-solid fa-shield-halved"></i> Seller Verification</h2>
+            <p style="margin-bottom:20px; color:gray;">To sell, we verify your contact info.</p>
+            
+            <div class="form-group">
+                <label>Email (Verified)</label>
+                <div style="background:#e0e7ff; padding:10px; border-radius:8px; color:var(--bot-text); font-family:monospace;" id="verifyEmailDisplay">user@email.com</div>
+            </div>
+
+            <div class="form-group"><label>Mobile Number</label><input type="number" id="verifyPhone" placeholder="9876543210"></div>
+            <div class="form-group"><label>Hostel / Home Address</label><textarea id="verifyAddr" placeholder="e.g. Block 3, Room 102 OR Vidyanagar Cross..."></textarea></div>
+            
+            <button class="btn btn-primary" onclick="verifySeller()">Verify & Continue</button>
+            <button class="btn btn-outline" style="margin-top:10px;" onclick="document.getElementById('verifyModal').style.display='none'">Cancel</button>
+        </div>
+    </div>
+
+    <div id="sellModal" class="modal-overlay">
+        <div class="modal-box">
+            <h2>List New Item</h2>
+            <div class="upload-preview" id="sellImgPreview" onclick="document.getElementById('sellImgInput').click()">
+                <div style="text-align:center;">
+                    <i class="fa-solid fa-cloud-arrow-up fa-2x"></i><br>Click to Upload Image (Required)
+                </div>
+            </div>
+            <input type="file" id="sellImgInput" accept="image/*" style="display:none;" onchange="previewImage(this)">
+            <p id="sellError" class="error-msg">⚠️ Please upload an image!</p>
+            
+            <div class="form-group"><label>Title</label><input type="text" id="sellTitle"></div>
+            <div class="form-group"><label>Price (₹)</label><input type="number" id="sellPrice"></div>
+            <div class="form-group"><label>Category</label>
+                <select id="sellCat"><option>Books</option><option>Tech</option><option>Tools</option></select>
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <div style="display:flex; gap:10px;">
+                    <textarea id="sellDesc" placeholder="Details..."></textarea>
+                    <button class="btn btn-magic" style="width:auto; padding:0 15px;" onclick="generateAiDesc()" title="Ask E.D.I.T.H">✨ AI</button>
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="submitListing()">Publish</button>
+            <button class="btn btn-outline" style="margin-top:10px;" onclick="document.getElementById('sellModal').style.display='none'">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA INIT ---
+        const initialProducts = [
+            { id: 1, title: "Engineering Physics (Kumbhojkar)", price: 450, category: "Books", image: "https://www.schoolchamp.net/image/cache/catalog/college/bengg/mechanical/semiv/engineering-mathematics-second-year-sem-4-by-g-v-kumbhojkar-latest-edition-924x1042.webp", desc: "Standard first-year physics textbook. Barely used, no highlighting inside. Cover slightly bent but pages are crisp. Essential for Sem 1 and 2 exams.", isMine: false, status: 'Active' },
+            { id: 2, title: "Arduino Uno R3 Kit", price: 850, category: "Tech", image: "https://images.unsplash.com/photo-1555664424-778a1e5e1b48?w=400", desc: "Complete starter kit including breadboard, jumper wires, LEDs, and resistors. Used for one mini-project. Works perfectly.", isMine: false, status: 'Active' },
+            { id: 3, title: "Mini Drafter (Omega)", price: 350, category: "Tools", image: "https://www.aystationery.com/wp-content/uploads/2020/09/Omega-MINI-DRAFTER_1.png", desc: "Original Omega mini-drafter for Engineering Drawing. rust-free arms, scale markings are clear. Comes with the original cover case.", isMine: false, status: 'Active' },
+            { id: 4, title: "Hercules Roadeo Cycle", price: 4500, category: "Tech", image:"https://choosemybicycle.com/cdn/shop/articles/hercules-roadeo-turner-v-2017_1000x.jpg?v=1747639654", desc: "2-year-old bicycle. New tires installed last month. Gear shifting is smooth. Selling because I bought a bike. Pickup from Hostel Block 3.", isMine: false, status: 'Active' },
+            { id: 5, title: "Cotton Lab Coat (L)", price: 200, category: "Tools", image: "https://www.schoolchamp.net/image/cache/catalog/college/bengg/mechanical/semiv/engineering-mathematics-second-year-sem-4-by-g-v-kumbhojkar-latest-edition-924x1042.webp", desc: "Standard white lab coat, Size Large. 100% Cotton. Required for Chemistry lab. Freshly washed and ironed.", isMine: false, status: 'Active' },
+            { id: 6, title: "Scientific Calc (fx-991EX)", price: 900, category: "Tech", image: "https://images.unsplash.com/photo-1594729095022-e2f6d2eece9d?w=400", desc: "Classwiz model. Solar + Battery powered. Solves matrices and integration instantly. Must-have for engineering math.", isMine: false, status: 'Active' },
+            // NEW PRODUCTS
+            { id: 7, title: "Programming in ANSI C (Balagurusamy)", price: 350, category: "Books", image: "https://images.unsplash.com/photo-1515879218367-8466d910aaa4?w=400", desc: "Latest edition. Bible for C programming. Good condition.", isMine: false, status: 'Active' },
+            { id: 8, title: "Workshop Boiler Suit (Blue)", price: 600, category: "Tools", image: "https://images.unsplash.com/photo-1536582539196-1dd034d67313?w=400", desc: "Required for Mechanical Workshop. Size XL. Thick cotton material for safety.", isMine: false, status: 'Active' },
+            { id: 9, title: "Wacom Tablet (One by Wacom)", price: 2500, category: "Tech", image: "https://images.unsplash.com/photo-1563206767-5b1d97299337?w=400", desc: "Digital tablet for notes and drawing. Compatible with Windows/Mac. Comes with pen and cable.", isMine: false, status: 'Active' },
+            { id: 10, title: "Blue Bird Practical Record", price: 50, category: "Books", image: "https://images.unsplash.com/photo-1544816155-12df9643f363?w=400", desc: "Unused record book. 150 pages. Graph pages included on left side.", isMine: false, status: 'Active' }
+        ];
+
+        // MEMORY RESET: CHANGED STORAGE KEYS TO 'swapx_v1'
+        let products = JSON.parse(localStorage.getItem('swapx_v1_prods')) || initialProducts;
+        let orders = JSON.parse(localStorage.getItem('swapx_v1_orders')) || [];
+        let user = JSON.parse(localStorage.getItem('swapx_v1_user')) || null;
+        let chatHistory = JSON.parse(localStorage.getItem('swapx_v1_chats')) || {};
+
+        let currentProduct = null;
+        let currentViewId = 'marketView';
+
+        function saveData() {
+            localStorage.setItem('swapx_v1_prods', JSON.stringify(products));
+            localStorage.setItem('swapx_v1_orders', JSON.stringify(orders));
+            localStorage.setItem('swapx_v1_user', JSON.stringify(user));
+            localStorage.setItem('swapx_v1_chats', JSON.stringify(chatHistory));
+        }
+
+        // --- APP STATE ---
+        window.onload = () => {
+            if(user) { 
+                updateProfileUI();
+                document.getElementById('authView').classList.remove('active');
+                document.getElementById('mainNav').style.display = 'flex';
+                switchView('marketView');
+            }
+        };
+
+        function updateProfileUI() {
+            document.getElementById('profileName').innerText = user.name;
+            if (user.phone) {
+                document.getElementById('profileStatus').innerText = "✅ Verified Seller";
+                document.getElementById('profileStatus').style.color = "var(--secondary)";
+                document.getElementById('profileStatus').style.fontWeight = "bold";
+            }
+        }
+
+        function switchView(id) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            window.scrollTo(0,0);
+            currentViewId = id;
+            if(id === 'marketView') renderGrid('All');
+            if(id === 'profileView') renderOrders();
+            if(id === 'sellerView') renderSeller();
+        }
+
+        function attemptOpenSeller() {
+            if (user && user.phone) {
+                switchView('sellerView');
+            } else {
+                document.getElementById('verifyEmailDisplay').innerText = user.email;
+                document.getElementById('verifyModal').style.display = 'flex';
+            }
+        }
+
+        function verifySeller() {
+            const phone = document.getElementById('verifyPhone').value;
+            const addr = document.getElementById('verifyAddr').value;
+            
+            if(!phone || !addr) return alert("Please fill all details.");
+            if(phone.length < 10) return alert("Enter valid Phone Number");
+
+            user.phone = phone;
+            user.address = addr;
+            
+            saveData();
+            updateProfileUI();
+
+            document.getElementById('verifyModal').style.display = 'none';
+            alert("Verification Successful! E.D.I.T.H. has updated your protocol.");
+            switchView('sellerView');
+        }
+
+        // --- AUTH ---
+        function toggleAuthMode() {
+            const login = document.getElementById('loginForm');
+            const signup = document.getElementById('signupForm');
+            if(login.style.display === 'none') { login.style.display='block'; signup.style.display='none'; }
+            else { login.style.display='none'; signup.style.display='block'; }
+        }
+
+        function validateEmail(email) {
+            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return re.test(email);
+        }
+
+        function handleLogin() {
+            const email = document.getElementById('loginEmail').value;
+            if(!validateEmail(email)) return alert("Please enter a valid email address.");
+            user = { name: email.split('@')[0], email: email };
+            saveData(); location.reload();
+        }
+
+        function handleSignup() {
+            const name = document.getElementById('regName').value;
+            const email = document.getElementById('regEmail').value;
+            if(!name) return alert("Enter Name");
+            if(!validateEmail(email)) return alert("Please enter a valid email address.");
+            user = { name: name, email: email };
+            saveData(); location.reload();
+        }
+
+        function goHome() { switchView('marketView'); }
+        function toggleTheme() { document.body.classList.toggle('dark-mode'); }
+        function logout() { localStorage.removeItem('swapx_v1_user'); location.reload(); }
+
+        // --- MARKET ---
+        function renderGrid(cat) {
+            const grid = document.getElementById('productGrid');
+            grid.innerHTML = "";
+            const activeProducts = products.filter(p => p.status !== 'Sold');
+            const items = cat === 'All' ? activeProducts : activeProducts.filter(p => p.category === cat);
+            
+            items.forEach(p => {
+                grid.innerHTML += `
+                <div class="card" onclick="openProduct(${p.id})">
+                    <img src="${p.image}" class="card-img">
+                    <div class="verified-badge"><i class="fa-solid fa-check"></i> Verified</div>
+                    <div style="padding:15px;">
+                        <h4 style="margin-bottom:5px;">${p.title}</h4>
+                        <div style="color:var(--primary); font-weight:800; font-size:1.1rem;">₹${p.price}</div>
+                    </div>
+                </div>`;
+            });
+        }
+
+        function handleSearch() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const grid = document.getElementById('productGrid');
+            const results = products.filter(p => 
+                p.status !== 'Sold' && (
+                p.title.toLowerCase().includes(query) || 
+                p.category.toLowerCase().includes(query) ||
+                p.desc.toLowerCase().includes(query))
+            );
+
+            grid.innerHTML = "";
+            if(results.length === 0) {
+                grid.innerHTML = `
+                    <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: gray;">
+                        <i class="fa-solid fa-ghost fa-3x" style="opacity: 0.3; margin-bottom: 15px;"></i>
+                        <p>No items found for "${query}"</p>
+                        <button class="btn btn-outline" style="width:auto; margin-top:10px;" onclick="renderGrid('All'); document.getElementById('searchInput').value=''">Clear Search</button>
+                    </div>
+                `;
+                return;
+            }
+            results.forEach(p => {
+                grid.innerHTML += `
+                <div class="card" onclick="openProduct(${p.id})">
+                    <img src="${p.image}" class="card-img">
+                    <div class="verified-badge"><i class="fa-solid fa-check"></i> Verified</div>
+                    <div style="padding:15px;">
+                        <h4 style="margin-bottom:5px;">${p.title}</h4>
+                        <div style="color:var(--primary); font-weight:800; font-size:1.1rem;">₹${p.price}</div>
+                    </div>
+                </div>`;
+            });
+        }
+
+        function openProduct(id) {
+            currentProduct = products.find(p => p.id === id);
+            document.getElementById('detailImg').src = currentProduct.image;
+            document.getElementById('detailTitle').innerText = currentProduct.title;
+            document.getElementById('detailPrice').innerText = "₹" + currentProduct.price;
+            document.getElementById('detailDesc').innerText = currentProduct.desc;
+            switchView('detailsView');
+        }
+
+        // --- PAYMENT ---
+        function goToPayment() {
+            document.getElementById('payAmount').innerText = "₹" + currentProduct.price;
+            document.getElementById('qrCodeImg').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa=campusstore@upi&pn=Store&am=${currentProduct.price}`;
+            switchView('paymentView');
+        }
+
+        let paymentMethod = 'upi';
+        function togglePaymentMethod(method) {
+            paymentMethod = method;
+            document.querySelectorAll('.pay-opt').forEach(el => el.classList.remove('active'));
+            document.getElementById('upiSection').style.display='none';
+            document.getElementById('cardSection').style.display='none';
+            document.getElementById('codSection').style.display='none';
+
+            if(method === 'upi') {
+                document.getElementById('optUpi').classList.add('active');
+                document.getElementById('upiSection').style.display='block';
+            } else if (method === 'card') {
+                document.getElementById('optCard').classList.add('active');
+                document.getElementById('cardSection').style.display='block';
+            } else {
+                document.getElementById('optCod').classList.add('active');
+                document.getElementById('codSection').style.display='block';
+            }
+        }
+
+        function processPayment() {
+            orders.unshift({
+                id: Date.now(),
+                title: currentProduct.title,
+                price: currentProduct.price,
+                status: 'Held',
+                method: paymentMethod.toUpperCase()
+            });
+            saveData();
+            alert(`Order Placed! Funds held in Escrow.`);
+            switchView('profileView');
+        }
+
+        // --- ORDERS ---
+        function renderOrders() {
+            const list = document.getElementById('ordersList');
+            list.innerHTML = "";
+            if(orders.length === 0) list.innerHTML = "<p>No orders yet.</p>";
+            orders.forEach((o, i) => {
+                let badge = o.status === 'Held' ? `<span style="background:#fff7ed; color:#c2410c; padding:4px 8px; border-radius:10px; font-weight:bold;">🔒 Held</span>` : `<span style="background:#ecfdf5; color:#047857; padding:4px 8px; border-radius:10px; font-weight:bold;">✅ Paid</span>`;
+                let action = o.status === 'Held' ? `<button class="btn btn-primary" style="padding:5px 10px; font-size:0.8rem;" onclick="confirmReceived(${i})">Confirm Received</button>` : '';
+                list.innerHTML += `
+                <div class="order-item">
+                    <div>
+                        <strong>${o.title}</strong>
+                        <div style="font-size:0.8rem; color:gray;">ID: ${o.id} • ₹${o.price} (${o.method})</div>
+                        <div style="margin-top:5px;">${badge}</div>
+                    </div>
+                    <div>${action}</div>
+                </div>`;
+            });
+        }
+
+        function confirmReceived(index) {
+            if(confirm("Release funds to seller?")) {
+                orders[index].status = 'Paid';
+                saveData(); renderOrders();
+                alert("Funds Released!");
+            }
+        }
+
+        function trackOrder() {
+            const id = document.getElementById('trackInput').value;
+            const order = orders.find(o => o.id == id);
+            const res = document.getElementById('trackResult');
+            if(order) {
+                document.getElementById('trackTitle').innerText = order.title;
+                document.getElementById('trackStatusVal').innerText = order.status;
+                res.style.display = 'block';
+            } else {
+                alert("Order ID not found.");
+                res.style.display = 'none';
+            }
+        }
+
+        // --- SELLER & STRICT UPLOAD LOGIC ---
+        function openSellModal() { document.getElementById('sellModal').style.display = 'flex'; }
+        
+        function previewImage(input) {
+            const preview = document.getElementById('sellImgPreview');
+            const err = document.getElementById('sellError');
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    preview.innerHTML = `<img src="${e.target.result}" style="width:100%; height:100%; object-fit:cover;">`;
+                    err.style.display = 'none'; // Hide error
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function generateAiDesc() {
+            const t = document.getElementById('sellTitle').value;
+            if(!t) return alert("Enter Title!");
+            document.getElementById('sellDesc').value = "E.D.I.T.H. is analyzing...";
+            setTimeout(() => {
+                document.getElementById('sellDesc').value = `Selling my ${t}. Excellent condition. Perfect for students! Verified by SwapX.`;
+            }, 1000);
+        }
+
+        function submitListing() {
+            const t = document.getElementById('sellTitle').value;
+            const pVal = document.getElementById('sellPrice').value;
+            const cVal = document.getElementById('sellCat').value;
+            const dVal = document.getElementById('sellDesc').value;
+            const fileInput = document.getElementById('sellImgInput');
+            const err = document.getElementById('sellError');
+
+            // 1. STRICT VALIDATION
+            if (!t || !pVal || !dVal) return alert("Please fill all details (Title, Price, Description).");
+            if (!fileInput.files || !fileInput.files[0]) {
+                err.style.display = 'block';
+                return alert("You MUST upload an image of the product to sell it.");
+            }
+
+            const reader = new FileReader();
+            reader.onloadend = function() {
+                const p = {
+                    id: Date.now(),
+                    title: t,
+                    price: pVal,
+                    category: cVal,
+                    desc: dVal,
+                    image: reader.result, // Save real image
+                    isMine: true,
+                    status: 'Active'
+                };
+                products.unshift(p);
+                saveData();
+                document.getElementById('sellModal').style.display='none';
+                switchView('sellerView');
+            }
+            reader.readAsDataURL(fileInput.files[0]);
+        }
+
+        function renderSeller() {
+            const list = document.getElementById('inventoryList');
+            list.innerHTML = "";
+            const myItems = products.filter(p => p.isMine);
+            const activeCount = myItems.filter(p => p.status !== 'Sold').length;
+            document.getElementById('statActive').innerText = activeCount;
+            const earn = orders.filter(o => o.status === 'Paid').reduce((acc, c) => acc + parseInt(c.price), 0);
+            document.getElementById('statEarnings').innerText = "₹" + earn;
+            
+            myItems.forEach(p => {
+                let controls = '';
+                if(p.status === 'Sold') {
+                    controls = `<div style="color:var(--secondary); font-weight:bold; font-size:0.9rem;">Sold Out</div>`;
+                } else {
+                    controls = `
+                    <div style="display:flex; gap:5px;">
+                        <button class="btn btn-success" style="padding:5px 10px; font-size:0.8rem;" onclick="markAsSold(${p.id})">Mark Sold</button>
+                        <button class="btn btn-danger" style="padding:5px 10px; font-size:0.8rem;" onclick="deleteItem(${p.id})"><i class="fa-solid fa-trash"></i></button>
+                    </div>`;
+                }
+                list.innerHTML += `<div class="order-item"><div><strong>${p.title}</strong><br>₹${p.price}</div>${controls}</div>`;
+            });
+        }
+
+        function markAsSold(id) {
+            if(confirm("Mark as Sold?")) {
+                const p = products.find(p => p.id === id);
+                if(p) { p.status = 'Sold'; saveData(); renderSeller(); }
+            }
+        }
+        function deleteItem(id) {
+            if(confirm("Delete Listing?")) { products = products.filter(p => p.id !== id); saveData(); renderSeller(); }
+        }
+
+        // --- E.D.I.T.H. (UPGRADED BRAIN) ---
+        function toggleEdith() {
+            const w = document.getElementById('edithWindow');
+            w.style.display = w.style.display === 'flex' ? 'none' : 'flex';
+        }
+        function handleEdithEnter(e) { if(e.key==='Enter') sendEdithMsg(); }
+        
+        function sendEdithMsg() {
+            const inp = document.getElementById('edithInput');
+            const txt = inp.value.trim().toLowerCase();
+            if(!txt) return;
+            document.getElementById('edithBody').innerHTML += `<div class="msg user">${inp.value}</div>`;
+            inp.value = "";
+            document.getElementById('edithBody').scrollTop = document.getElementById('edithBody').scrollHeight;
+            setTimeout(() => {
+                let resp = processEdithLogic(txt);
+                document.getElementById('edithBody').innerHTML += `<div class="msg bot">${resp}</div>`;
+                document.getElementById('edithBody').scrollTop = document.getElementById('edithBody').scrollHeight;
+            }, 600);
+        }
+
+        function processEdithLogic(input) {
+            // 1. Identity & Time
+            if (input.includes("who are you") || input.includes("name")) return "I am E.D.I.T.H. (Even Dead I'm The Hero). I manage the SwapX interface.";
+            if (input.includes("time")) return "The current time is " + new Date().toLocaleTimeString();
+
+            // 2. Navigation
+            if (input.includes("home") || input.includes("market")) { goHome(); return "Navigating to Marketplace."; }
+            if (input.includes("sell")) { attemptOpenSeller(); return "Initializing Seller Protocol."; }
+            if (input.includes("profile") || input.includes("orders")) { switchView('profileView'); return "Accessing User Profile."; }
+            
+            // 3. System
+            if (input.includes("dark") || input.includes("light") || input.includes("theme")) { toggleTheme(); return "Visual interface updated."; }
+            if (input.includes("logout")) { logout(); return "Ending session..."; }
+
+            // 4. Contextual Help
+            if (currentViewId === 'detailsView' && currentProduct) {
+                if(input.includes("price") || input.includes("cost")) return `The price is set at ₹${currentProduct.price}.`;
+                if(input.includes("buy")) { goToPayment(); return "Secure Payment Gateway initialized."; }
+            }
+
+            // 5. General Queries
+            if (input.includes("help") || input.includes("do")) return "I can navigate (Home, Sell, Profile), control the system (Dark Mode, Logout), and assist with product details.";
+            
+            return "Command not recognized. Try asking for 'Help' or 'Time'.";
+        }
+
+        // --- SELLER CHAT ---
+        function openSellerChat() {
+            if (!currentProduct) return;
+            const chatHeader = document.querySelector('#sellerWindow .chat-header span');
+            chatHeader.innerText = currentProduct.title.substring(0, 20) + "..."; 
+
+            const chatId = 'prod_' + currentProduct.id;
+            const messages = chatHistory[chatId] || [];
+            
+            const body = document.getElementById('sellerBody');
+            body.innerHTML = ""; 
+
+            if (messages.length === 0) {
+                body.innerHTML = `<div class="msg human">Hi! Is this still available?</div>`;
+            } else {
+                messages.forEach(m => {
+                    body.innerHTML += `<div class="msg ${m.sender}">${m.text}</div>`;
+                });
+            }
+            document.getElementById('sellerWindow').style.display = 'flex';
+            body.scrollTop = body.scrollHeight; 
+        }
+
+        function closeSellerChat() { document.getElementById('sellerWindow').style.display = 'none'; }
+        function handleSellerEnter(e) { if(e.key==='Enter') sendSellerMsg(); }
+        
+        function sendSellerMsg() {
+            const inp = document.getElementById('sellerInput');
+            const txt = inp.value.trim();
+            if (!txt) return;
+            const chatId = 'prod_' + currentProduct.id;
+            if (!chatHistory[chatId]) chatHistory[chatId] = [];
+            chatHistory[chatId].push({ sender: 'user', text: txt });
+            const body = document.getElementById('sellerBody');
+            body.innerHTML += `<div class="msg user">${txt}</div>`;
+            inp.value = "";
+            body.scrollTop = body.scrollHeight;
+            saveChats(); 
+
+            setTimeout(() => {
+                let reply = "Yes, it is available.";
+                if (txt.includes("price")) reply = `The price is fixed at ₹${currentProduct.price}.`;
+                chatHistory[chatId].push({ sender: 'human', text: reply });
+                body.innerHTML += `<div class="msg human">${reply}</div>`;
+                body.scrollTop = body.scrollHeight;
+                saveChats(); 
+            }, 1500);
+        }
+        function saveChats() { localStorage.setItem('swapx_v1_chats', JSON.stringify(chatHistory)); }
+    </script>
+</body>
+</html>
